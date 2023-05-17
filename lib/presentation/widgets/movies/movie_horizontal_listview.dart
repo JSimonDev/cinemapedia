@@ -55,11 +55,11 @@ class _MovieHorizontalListviewState extends State<MovieHorizontalListview> {
         children: [
           if (widget.title != null || widget.subtitle != null)
             _Title(
-                title: widget.title,
-                subtitle: widget.subtitle,
-                buttonVisible: _buttonVisible,
-                scrollController: scrollController,
-                ),
+              title: widget.title,
+              subtitle: widget.subtitle,
+              buttonVisible: _buttonVisible,
+              scrollController: scrollController,
+            ),
           Expanded(
             child: NotificationListener<ScrollNotification>(
               onNotification: (scrollNotification) {
@@ -76,7 +76,11 @@ class _MovieHorizontalListviewState extends State<MovieHorizontalListview> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, index) {
-                  return _Slide(movie: widget.movies[index]);
+                  return FadeInRight(
+                    child: _Slide(
+                      movie: widget.movies[index],
+                    ),
+                  );
                 },
               ),
             ),
@@ -96,7 +100,7 @@ class _Title extends StatelessWidget {
   const _Title({
     this.title,
     this.subtitle,
-    required this.buttonVisible, 
+    required this.buttonVisible,
     required this.scrollController,
   });
 
@@ -124,7 +128,8 @@ class _Title extends StatelessWidget {
               const Spacer(),
               if (subtitle != null)
                 FilledButton.tonal(
-                  style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                  style:
+                      const ButtonStyle(visualDensity: VisualDensity.compact),
                   onPressed: () {},
                   child: Text(subtitle!),
                 ),
@@ -132,9 +137,12 @@ class _Title extends StatelessWidget {
               if (value)
                 FadeIn(
                   child: FilledButton.tonal(
-                    style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                    style:
+                        const ButtonStyle(visualDensity: VisualDensity.compact),
                     onPressed: () {
-                      scrollController.animateTo(0.0, duration: const Duration(seconds: 1), curve: Curves.decelerate);
+                      scrollController.animateTo(0.0,
+                          duration: const Duration(seconds: 1),
+                          curve: Curves.decelerate);
                     },
                     child: const Icon(Icons.arrow_back),
                   ),
