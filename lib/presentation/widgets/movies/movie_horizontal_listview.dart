@@ -50,7 +50,7 @@ class _MovieHorizontalListviewState extends State<MovieHorizontalListview> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 338,
+      height: 360,
       child: Column(
         children: [
           if (widget.title != null || widget.subtitle != null)
@@ -163,6 +163,12 @@ class _Slide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme textStyles = Theme.of(context).textTheme;
+    final decoration = BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+              color: Colors.black45, blurRadius: 5, offset: Offset(0, 5))
+        ]);
     const double buttonSize = 18;
 
     return Container(
@@ -174,31 +180,34 @@ class _Slide extends StatelessWidget {
           SizedBox(
             width: 150,
             height: 225,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.network(
-                movie.posterPath,
-                fit: BoxFit.cover,
-                width: 150,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress != null) {
-                    return FadeIn(
-                      child: Container(
-                        color: Colors.black12,
-                        child: const SizedBox(
-                          width: 150,
-                          height: 225,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+            child: DecoratedBox(
+              decoration: decoration,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  movie.posterPath,
+                  fit: BoxFit.cover,
+                  width: 150,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress != null) {
+                      return FadeIn(
+                        child: Container(
+                          color: Colors.black12,
+                          child: const SizedBox(
+                            width: 150,
+                            height: 225,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }
-                  return FadeIn(child: child);
-                },
+                      );
+                    }
+                    return FadeIn(child: child);
+                  },
+                ),
               ),
             ),
           ),
