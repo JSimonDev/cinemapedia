@@ -11,4 +11,10 @@ class HumanFormats {
 
     return formatterNumber;
   }
+
+  static String date(DateTime number) {
+    final formatterDate = DateFormat('d/M/y','en_US').format(number);
+
+    return formatterDate;
+  }
 }
