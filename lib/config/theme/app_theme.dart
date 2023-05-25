@@ -4,7 +4,10 @@ class AppTheme {
 
   ThemeData getTheme() => ThemeData(
     useMaterial3: true,
-    colorSchemeSeed: const Color(0xFF2862F5)
+    colorSchemeSeed: const Color.fromARGB(255, 39, 154, 255),
+    // brightness: Brightness.dark,
+    // scaffoldBackgroundColor: Colors.black,
+    // appBarTheme: const AppBarTheme(backgroundColor: Colors.black)
   );
 
 }
