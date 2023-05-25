@@ -5,9 +5,9 @@ import '../providers.dart';
 
 
 final movieInfoProvider = StateNotifierProvider< MovieMapNotifier, Map<String, Movie> > ( (ref) {
-    final getMovie = ref.watch(movieRepositoryProvider).getMovieById;
+    final movieRepository = ref.watch(movieRepositoryProvider).getMovieById;
 
-    return MovieMapNotifier(getMovie: getMovie);
+    return MovieMapNotifier(getMovie: movieRepository);
 
 });
 
