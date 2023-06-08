@@ -1,11 +1,13 @@
 import 'package:animate_do/animate_do.dart';
-import 'package:cinemapedia/domain/entities/movie.dart';
-import 'package:cinemapedia/presentation/providers/providers.dart';
+import 'package:cinemapedia/config/constants/environment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../providers/movies/movie_info_provider.dart';
+import 'package:cinemapedia/domain/entities/movie.dart';
+import 'package:cinemapedia/presentation/providers/actors/actors_by_movie_provider.dart';
+
+import '../../providers/providers.dart';
 import '../../widgets/widgets.dart';
 
 class MovieScreen extends ConsumerStatefulWidget {
@@ -22,20 +24,77 @@ class MovieScreen extends ConsumerStatefulWidget {
 }
 
 class MovieScreenState extends ConsumerState<MovieScreen> {
+  final _pageController = PageController();
+  final draggableScrollableController = DraggableScrollableController();
+
   @override
   void initState() {
     super.initState();
+
+    _pageController.addListener(() {
+      setState(() {});
+    });
 
     ref.read(movieInfoProvider.notifier).loadMovie(widget.movieId);
     ref.read(actorsByMovieProvider.notifier).loadActors(widget.movieId);
   }
 
   @override
+  void dispose() {
+    _pageController.removeListener(() {});
+    _pageController.dispose();
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final DraggableScrollableController scrollController =
-        DraggableScrollableController();
     final Movie? movie = ref.watch(movieInfoProvider)[widget.movieId];
+    final String selectedActorProfilePath =
+        ref.watch(selectedActorProfilePhotoProvider).last;
+    final double progress =
+        _pageController.hasClients ? (_pageController.page ?? 0) : 0;
     final Size size = MediaQuery.of(context).size;
+    final Color colors = Theme.of(context).scaffoldBackgroundColor;
+    const double borderRadius = 30;
+
+    void updateStates() {
+      final ids = ref.watch(selectedActorProvider);
+      final photo = ref.watch(selectedActorProfilePhotoProvider);
+      if (ids.length > 1 && photo.length > 1 && progress > 0.8) {
+        ids.removeLast();
+        photo.removeLast();
+        ref.read(selectedActorProvider.notifier).state = ids;
+        ref.read(selectedActorProfilePhotoProvider.notifier).state = photo;
+      }
+    }
+
+    void nextPageTransition() async {
+      draggableScrollableController.animateTo(0.4,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInCubic);
+      await Future.delayed(const Duration(milliseconds: 300));
+      _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInCubic);
+    }
+
+    void previousPageTransition() async {
+      updateStates();
+      draggableScrollableController.animateTo(0.9,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic);
+      await Future.delayed(const Duration(milliseconds: 300));
+      _pageController.previousPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic);
+    }
+
+    Future<bool> onWillPop() async {
+      updateStates();
+      context.pop();
+      return true;
+    }
 
     return (movie == null)
         ? const Scaffold(
@@ -45,32 +104,98 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
               ),
             ),
           )
-        : Scaffold(
-            extendBodyBehindAppBar: true,
-            appBar: movieScreenAppBar(context),
-            body: Stack(
-              children: [
-                //* MOVIE IMAGE
-                Image.network(
-                  movie.posterPath,
-                  fit: BoxFit.cover,
-                  height: size.height * 0.7,
-                ),
+        : WillPopScope(
+            onWillPop: onWillPop,
+            child: Scaffold(
+              extendBodyBehindAppBar: true,
+              appBar: movieScreenAppBar(context, updateStates),
+              body: Stack(
+                children: [
+                  //* MOVIE IMAGE
+                  Opacity(
+                    opacity: 1 - progress,
+                    child: FadeIn(
+                      child: Image.network(
+                        movie.posterPath,
+                        width: size.width,
+                        height: size.height * 0.7,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
 
-                //* DRAGGABLE SCROLL SHEET
-                _CustomDraggableScrollSheet(
-                    scrollController: scrollController, movie: movie)
-              ],
+                  //* SELECTED ACTOR IMAGE
+                  Opacity(
+                    opacity: progress,
+                    child: selectedActorProfilePath ==
+                                Environment.noActorPosterImage ||
+                            selectedActorProfilePath == ""
+                        ? Image.network(
+                            Environment.noActorPosterImage,
+                            width: size.width,
+                            height: size.height * 0.7,
+                            fit: BoxFit.cover,
+                          )
+                        : FadeIn(
+                            child: Image.network(
+                              'https://image.tmdb.org/t/p/w500$selectedActorProfilePath',
+                              width: size.width,
+                              height: size.height * 0.7,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                  ),
+
+                  //* DRAGGABLE SCROLL SHEET
+                  DraggableScrollableSheet(
+                    controller: draggableScrollableController,
+                    initialChildSize: 0.4,
+                    minChildSize: 0.3,
+                    maxChildSize: 0.9,
+                    builder: (context, scrollController) {
+                      return Container(
+                        decoration: BoxDecoration(
+                            color: colors,
+                            borderRadius: const BorderRadius.only(
+                              topRight: Radius.circular(borderRadius),
+                              topLeft: Radius.circular(borderRadius),
+                            )),
+                        child: Stack(
+                          children: [
+                            PageView(
+                              controller: _pageController,
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: [
+                                _CustomDraggableScrollableSheetContent(
+                                  movie: movie,
+                                  scrollController: scrollController,
+                                  pageController: _pageController,
+                                  nextPageTransition: nextPageTransition,
+                                ),
+                                ActorDetailsWidget(
+                                    scrollContoller: scrollController,
+                                    previousPageTransition:
+                                        previousPageTransition),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                ],
+              ),
             ),
           );
   }
 
-  AppBar movieScreenAppBar(BuildContext context) {
+  AppBar movieScreenAppBar(BuildContext context, updateStates) {
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded),
         tooltip: 'Back',
         onPressed: () {
+          updateStates();
           context.pop();
         },
       ),
@@ -93,76 +218,33 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
   }
 }
 
-class _CustomDraggableScrollSheet extends StatelessWidget {
-  const _CustomDraggableScrollSheet({
-    required this.scrollController,
-    required this.movie,
-  });
-
-  final DraggableScrollableController scrollController;
-  final Movie movie;
-
-  @override
-  Widget build(BuildContext context) {
-    const double borderRadius = 30;
-    final colors = Theme.of(context).scaffoldBackgroundColor;
-
-    return DraggableScrollableSheet(
-      controller: scrollController,
-      initialChildSize: 0.40,
-      minChildSize: 0.30,
-      maxChildSize: 0.7,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-              color: colors,
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(borderRadius),
-                topLeft: Radius.circular(borderRadius),
-              )),
-          child: _CustomDraggableScrollableSheetContent(
-            movie: movie,
-            scrollController: scrollController,
-          ),
-        );
-      },
-    );
-  }
-}
-
 class _CustomDraggableScrollableSheetContent extends StatelessWidget {
+  final Movie movie;
+  final ScrollController scrollController;
+  final PageController pageController;
+  final dynamic nextPageTransition;
+
   const _CustomDraggableScrollableSheetContent({
     required this.movie,
     required this.scrollController,
+    required this.pageController,
+    required this.nextPageTransition,
   });
-
-  final Movie movie;
-  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
+    final TextTheme textStyles = Theme.of(context).textTheme;
+
     return ListView(
       padding: EdgeInsets.zero,
       physics: const ClampingScrollPhysics(),
       controller: scrollController,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 15, 20, 0),
+          padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: Colors.black26),
-                  height: 7,
-                  width: 50,
-                  // color: Colors.red,
-                ),
-              ),
-              const SizedBox(height: 15),
-              
               //* ORIGINAL TITLE
               if (movie.originalTitle != movie.title)
                 Text(
@@ -173,8 +255,11 @@ class _CustomDraggableScrollableSheetContent extends StatelessWidget {
               Text(
                 movie.title,
                 maxLines: 2,
-                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                style: textStyles.headlineMedium!
+                    .copyWith(fontWeight: FontWeight.bold),
               ),
+
+              const SizedBox(height: 5),
 
               //* RATING
               RatingAndDate(movie: movie),
@@ -186,16 +271,9 @@ class _CustomDraggableScrollableSheetContent extends StatelessWidget {
                 movie.overview,
                 softWrap: true,
                 textAlign: TextAlign.justify,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                // style: const TextStyle(fontWeight: FontWeight.w500),
               ),
 
-              //TODO: Poner boton de ...Ver Mas.
-              // GestureDetector(
-              //   onTap: (){},
-              //     child: const Text(
-              //   '...Ver mas',
-              //   style: TextStyle(color: Colors.black45),
-              // )),
               const SizedBox(height: 10),
 
               //* GENRES
@@ -205,6 +283,8 @@ class _CustomDraggableScrollableSheetContent extends StatelessWidget {
         ),
         _ActorsByMovie(
           movieId: movie.id.toString(),
+          pageController: pageController,
+          nextPageTransition: nextPageTransition,
         ),
         const SizedBox(height: 50)
       ],
@@ -216,8 +296,14 @@ class _ActorsByMovie extends ConsumerWidget {
   final String movieId;
   final ScrollController scrollController = ScrollController();
   final ValueNotifier<bool> _buttonVisible = ValueNotifier<bool>(false);
+  final PageController pageController;
+  final dynamic nextPageTransition;
 
-  _ActorsByMovie({required this.movieId});
+  _ActorsByMovie({
+    required this.movieId,
+    required this.pageController,
+    required this.nextPageTransition,
+  });
 
   void initState() {
     scrollController.addListener(() {});
@@ -275,28 +361,51 @@ class _ActorsByMovie extends ConsumerWidget {
                 itemBuilder: (context, index) {
                   final actor = actors[index];
 
-                  return FadeInRight(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          //* ACTOR PHOTO
-                          DecoratedBox(
-                            decoration: decoration,
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        //* ACTOR PHOTO
+                        DecoratedBox(
+                          decoration: decoration,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onTap: actor.id.toString() !=
+                                    ref.read(selectedActorProvider).last
+                                ? () async {
+                                    await nextPageTransition();
+                                    ref
+                                        .read(selectedActorProvider.notifier)
+                                        .state
+                                        .add('${actor.id}');
+                                    ref
+                                        .read(selectedActorProfilePhotoProvider
+                                            .notifier)
+                                        .state
+                                        .add(actor.profilePath);
+                                  }
+                                : null,
                             child: SizedBox(
                               width: 150,
                               height: 200,
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(20),
-                                child: Image.network(actor.profilePath,
-                                    height: 180,
-                                    width: 135,
-                                    fit: BoxFit.cover, loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                  if (loadingProgress != null) {
-                                    return FadeIn(
-                                      child: Container(
+                                child: ImageFiltered(
+                                  imageFilter: ColorFilter.mode(
+                                    actor.id.toString() ==
+                                            ref.read(selectedActorProvider).last
+                                        ? Colors.black
+                                        : Colors.transparent,
+                                    BlendMode.color,
+                                  ),
+                                  child: Image.network(actor.profilePath,
+                                      height: 180,
+                                      width: 135,
+                                      fit: BoxFit.cover, loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                    if (loadingProgress != null) {
+                                      return Container(
                                         color: Colors.black12,
                                         child: const SizedBox(
                                           width: 150,
@@ -307,35 +416,35 @@ class _ActorsByMovie extends ConsumerWidget {
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  }
-                                  return FadeIn(child: child);
-                                }),
+                                      );
+                                    }
+                                    return child;
+                                  }),
+                                ),
                               ),
                             ),
                           ),
-                          //* ACTOR NAME
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            width: 150,
-                            child: Text(
-                              '${actor.name} /',
-                              maxLines: 2,
-                            ),
+                        ),
+                        //* ACTOR NAME
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: 150,
+                          child: Text(
+                            '${actor.name} /',
+                            maxLines: 2,
                           ),
-                          SizedBox(
-                            width: 150,
-                            child: Text(
-                              actor.character ?? '',
-                              maxLines: 2,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  overflow: TextOverflow.ellipsis),
-                            ),
+                        ),
+                        SizedBox(
+                          width: 150,
+                          child: Text(
+                            actor.character ?? '',
+                            maxLines: 2,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                overflow: TextOverflow.ellipsis),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },
