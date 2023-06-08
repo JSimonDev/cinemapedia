@@ -12,7 +12,7 @@ class TheMovieDbDatasource extends MoviesDatasource {
   final dio = Dio(
     BaseOptions(baseUrl: 'https://api.themoviedb.org/3', queryParameters: {
       'api_key': Environment.theMovieDbKey,
-      'language': 'es-MX'
+      'language': 'es-ES'
     }),
   );
 
@@ -20,8 +20,8 @@ class TheMovieDbDatasource extends MoviesDatasource {
     final movieDbResponse = TheMovieDbResponse.fromJson(json);
 
     final List<Movie> movies = movieDbResponse.results
-        // .where((moviedb) => moviedb.posterPath != 'no-poster')
         .map((moviedb) => MovieMapper.theMovieDBToEntity(moviedb))
+        .where((movie) => movie.posterPath != Environment.noMoviePosterImage)
         .toList();
 
     return movies;
