@@ -11,7 +11,7 @@ class Actor {
     required this.gender,
     required this.name,
     required this.profilePath,
-    required this.character,
     required this.popularity,
+    this.character,
   });
 }
