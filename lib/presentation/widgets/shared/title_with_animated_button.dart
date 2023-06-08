@@ -16,7 +16,6 @@ class TitleWithAnimatedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // const titleStyle = TextStyle(fontSize: 25, fontWeight: FontWeight.bold);
     final titleStyle = Theme.of(context).textTheme.titleLarge;
 
     return ValueListenableBuilder(

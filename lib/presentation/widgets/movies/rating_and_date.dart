@@ -1,31 +1,34 @@
-import 'package:cinemapedia/config/helpers/human_formats.dart';
-import 'package:cinemapedia/domain/entities/movie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
+import 'package:cinemapedia/config/helpers/human_formats.dart';
+import 'package:cinemapedia/domain/entities/movie.dart';
+
 class RatingAndDate extends StatelessWidget {
   final Movie movie;
-  final double? numberSize;
+  final bool? ignoreGestures;
+  final bool? allowHalfRating;
   final Color? numberColor;
+  final Color? iconColor;
+  final double? numberSize;
   final double? iconSize;
   final double? minRating;
   final double? maxRating;
-  final bool? allowHalfRating;
   final IconData? icon;
-  final Color? iconColor;
   final String? noDateText;
 
   const RatingAndDate({
     super.key,
     required this.movie,
-    this.numberSize,
+    this.ignoreGestures,
+    this.allowHalfRating,
     this.numberColor,
+    this.iconColor,
+    this.numberSize,
     this.iconSize,
     this.minRating,
     this.maxRating,
-    this.allowHalfRating,
     this.icon,
-    this.iconColor,
     this.noDateText,
   });
 
@@ -35,7 +38,6 @@ class RatingAndDate extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-
           //* NUMBER
           Text(
             HumanFormats.number(movie.voteAverage, decimals: 1),
@@ -49,6 +51,7 @@ class RatingAndDate extends StatelessWidget {
 
           //* STARS
           RatingBar.builder(
+            ignoreGestures: ignoreGestures ?? true,
             itemSize: iconSize ?? 25,
             initialRating: movie.voteAverage / 2,
             minRating: minRating ?? 0,
@@ -61,22 +64,26 @@ class RatingAndDate extends StatelessWidget {
             ),
             onRatingUpdate: (rating) {},
           ),
-          
+
           const Spacer(),
 
           //* DIVIDER
           const VerticalDivider(
             indent: 3,
             endIndent: 3,
-            thickness: 2,
+            thickness: 1,
           ),
 
           //* DATE
-          movie.releaseDate != null
+          movie.releaseDate != ''
               ? Text(
-                  HumanFormats.date(movie.releaseDate!),
+                  movie.releaseDate,
+                  style: const TextStyle(fontWeight: FontWeight.w300),
                 )
-              : Text(noDateText ?? 'Sin Fecha')
+              : Text(
+                  noDateText ?? 'Sin Fecha',
+                  style: const TextStyle(fontWeight: FontWeight.w300),
+                )
         ],
       ),
     );
