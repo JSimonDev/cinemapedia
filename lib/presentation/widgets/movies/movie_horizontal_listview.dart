@@ -57,12 +57,12 @@ class _MovieHorizontalListviewState extends State<MovieHorizontalListview> {
       height: 360,
       child: Column(
         children: [
-            TitleWithAnimatedButton(
-              title: widget.title,
-              subtitle: widget.subtitle,
-              buttonVisible: _buttonVisible,
-              scrollController: scrollController,
-            ),
+          TitleWithAnimatedButton(
+            title: widget.title,
+            subtitle: widget.subtitle,
+            buttonVisible: _buttonVisible,
+            scrollController: scrollController,
+          ),
           Expanded(
             child: NotificationListener<ScrollNotification>(
               onNotification: (scrollNotification) {
@@ -144,10 +144,10 @@ class _Slide extends StatelessWidget {
                       );
                     }
                     return GestureDetector(
-                      onTap: () => context.push('/movie/${movie.id}'),
+                        onTap: () => context.push('/movie/${movie.id}'),
                         child: FadeIn(
-                      child: child,
-                    ));
+                          child: child,
+                        ));
                   },
                 ),
               ),
