@@ -1,9 +1,9 @@
 import 'package:animate_do/animate_do.dart';
-import 'package:cinemapedia/config/constants/environment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:cinemapedia/config/constants/environment.dart';
 import 'package:cinemapedia/domain/entities/movie.dart';
 import 'package:cinemapedia/presentation/providers/actors/actors_by_movie_provider.dart';
 
@@ -96,97 +96,90 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
       return true;
     }
 
-    return (movie == null)
-        ? const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
-            ),
-          )
-        : WillPopScope(
-            onWillPop: onWillPop,
-            child: Scaffold(
-              extendBodyBehindAppBar: true,
-              appBar: movieScreenAppBar(context, updateStates),
-              body: Stack(
-                children: [
-                  //* MOVIE IMAGE
-                  Opacity(
-                    opacity: 1 - progress,
-                    child: FadeIn(
+    return WillPopScope(
+      onWillPop: onWillPop,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: movieScreenAppBar(context, updateStates),
+        body: Stack(
+          children: [
+            //* MOVIE IMAGE
+            Opacity(
+              opacity: 1 - progress,
+              child: movie != null
+                  ? FadeIn(
                       child: Image.network(
                         movie.posterPath,
                         width: size.width,
                         height: size.height * 0.7,
                         fit: BoxFit.cover,
                       ),
-                    ),
-                  ),
+                    )
+                  : MovieImagePlaceholder(size: size),
+            ),
 
-                  //* SELECTED ACTOR IMAGE
-                  Opacity(
-                    opacity: progress,
-                    child: selectedActorProfilePath ==
-                                Environment.noActorPosterImage ||
-                            selectedActorProfilePath == ""
-                        ? Image.network(
-                            Environment.noActorPosterImage,
+            //* SELECTED ACTOR IMAGE
+            Opacity(
+              opacity: progress,
+              child:
+                  selectedActorProfilePath == Environment.noActorPosterImage ||
+                          selectedActorProfilePath == ""
+                      ? Image.network(
+                          Environment.noActorPosterImage,
+                          width: size.width,
+                          height: size.height * 0.7,
+                          fit: BoxFit.cover,
+                        )
+                      : FadeIn(
+                          child: Image.network(
+                            'https://image.tmdb.org/t/p/w500$selectedActorProfilePath',
                             width: size.width,
                             height: size.height * 0.7,
                             fit: BoxFit.cover,
-                          )
-                        : FadeIn(
-                            child: Image.network(
-                              'https://image.tmdb.org/t/p/w500$selectedActorProfilePath',
-                              width: size.width,
-                              height: size.height * 0.7,
-                              fit: BoxFit.cover,
-                            ),
                           ),
-                  ),
-
-                  //* DRAGGABLE SCROLL SHEET
-                  DraggableScrollableSheet(
-                    controller: draggableScrollableController,
-                    initialChildSize: 0.4,
-                    minChildSize: 0.3,
-                    maxChildSize: 0.9,
-                    builder: (context, scrollController) {
-                      return Container(
-                        decoration: BoxDecoration(
-                            color: colors,
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(borderRadius),
-                              topLeft: Radius.circular(borderRadius),
-                            )),
-                        child: Stack(
-                          children: [
-                            PageView(
-                              controller: _pageController,
-                              physics: const NeverScrollableScrollPhysics(),
-                              children: [
-                                _CustomDraggableScrollableSheetContent(
-                                  movie: movie,
-                                  scrollController: scrollController,
-                                  pageController: _pageController,
-                                  nextPageTransition: nextPageTransition,
-                                ),
-                                ActorDetailsWidget(
-                                    scrollContoller: scrollController,
-                                    previousPageTransition:
-                                        previousPageTransition),
-                              ],
-                            ),
-                          ],
                         ),
-                      );
-                    },
-                  )
-                ],
-              ),
             ),
-          );
+
+            //* DRAGGABLE SCROLL SHEET
+            DraggableScrollableSheet(
+              controller: draggableScrollableController,
+              initialChildSize: 0.4,
+              minChildSize: 0.3,
+              maxChildSize: 0.9,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                      color: colors,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(borderRadius),
+                        topLeft: Radius.circular(borderRadius),
+                      )),
+                  child: Stack(
+                    children: [
+                      PageView(
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          _CustomDraggableScrollableSheetContent(
+                            movie: movie,
+                            scrollController: scrollController,
+                            pageController: _pageController,
+                            nextPageTransition: nextPageTransition,
+                          ),
+                          ActorDetailsWidget(
+                              scrollContoller: scrollController,
+                              previousPageTransition: previousPageTransition),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   AppBar movieScreenAppBar(BuildContext context, updateStates) {
@@ -219,7 +212,7 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
 }
 
 class _CustomDraggableScrollableSheetContent extends StatelessWidget {
-  final Movie movie;
+  final Movie? movie;
   final ScrollController scrollController;
   final PageController pageController;
   final dynamic nextPageTransition;
@@ -234,6 +227,7 @@ class _CustomDraggableScrollableSheetContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme textStyles = Theme.of(context).textTheme;
+    final Size size = MediaQuery.of(context).size;
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -246,46 +240,58 @@ class _CustomDraggableScrollableSheetContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               //* ORIGINAL TITLE
-              if (movie.originalTitle != movie.title)
-                Text(
-                  movie.originalTitle,
-                ),
+              (movie != null)
+                  ? (movie!.originalTitle != movie!.title)
+                      ? Text(
+                          movie!.originalTitle,
+                        )
+                      : const SizedBox()
+                  : MovieOriginalTitlePlaceholder(size: size),
 
               //* TITLE
-              Text(
-                movie.title,
-                maxLines: 2,
-                style: textStyles.headlineMedium!
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
+              movie != null
+                  ? Text(
+                      movie!.title,
+                      maxLines: 2,
+                      style: textStyles.headlineMedium!
+                          .copyWith(fontWeight: FontWeight.bold),
+                    )
+                  : MovieTitlePlaceholder(size: size),
 
               const SizedBox(height: 5),
 
               //* RATING
-              RatingAndDate(movie: movie),
+              movie != null
+                  ? RatingAndDate(movie: movie!)
+                  : MovieRatingPlaceholder(size: size),
 
               const SizedBox(height: 20),
 
               //* OVERVIEW
-              Text(
-                movie.overview,
-                softWrap: true,
-                textAlign: TextAlign.justify,
-                // style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
+              movie != null
+                  ? Text(
+                      movie!.overview,
+                      softWrap: true,
+                      textAlign: TextAlign.justify,
+                      // style: const TextStyle(fontWeight: FontWeight.w500),
+                    )
+                  : MovieOverviewPlaceholder(size: size),
 
               const SizedBox(height: 10),
 
               //* GENRES
-              _Genres(movie: movie),
+              movie != null
+                  ? _Genres(movie: movie!)
+                  : MovieGenresPlaceholder(size: size),
             ],
           ),
         ),
-        _ActorsByMovie(
-          movieId: movie.id.toString(),
-          pageController: pageController,
-          nextPageTransition: nextPageTransition,
-        ),
+        if (movie != null)
+          _ActorsByMovie(
+            movieId: movie!.id.toString(),
+            pageController: pageController,
+            nextPageTransition: nextPageTransition,
+          ),
         const SizedBox(height: 50)
       ],
     );
@@ -316,10 +322,11 @@ class _ActorsByMovie extends ConsumerWidget {
   @override
   Widget build(BuildContext context, ref) {
     final decoration = BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(color: Colors.black45, blurRadius: 5, offset: Offset(0, 5))
-        ]);
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: const [
+        BoxShadow(color: Colors.black45, blurRadius: 5, offset: Offset(0, 5))
+      ],
+    );
     final actorsByMovie = ref.watch(actorsByMovieProvider);
 
     if (actorsByMovie[movieId] == null) {
@@ -458,11 +465,11 @@ class _ActorsByMovie extends ConsumerWidget {
 }
 
 class _Genres extends StatelessWidget {
+  final Movie movie;
+
   const _Genres({
     required this.movie,
   });
-
-  final Movie movie;
 
   @override
   Widget build(BuildContext context) {
