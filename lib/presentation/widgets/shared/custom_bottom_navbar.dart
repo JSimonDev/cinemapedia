@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
@@ -9,6 +10,20 @@ class CustomBottomNavBar extends StatefulWidget {
 
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   var selectedBottomNav = bottomNavs[0];
+
+  void onItemTapped(BuildContext context, int index) {
+    switch (index) {
+      case 63584:
+        context.go('/home/0');
+        break;
+      case 63548:
+        context.go('/home/1');
+        break;
+      case 62927:
+        context.go('/home/2');
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +45,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     if (bottomNavs[index] != selectedBottomNav) {
                       setState(() {
                         selectedBottomNav = bottomNavs[index];
+                        index = selectedBottomNav.codePoint;
+                        // print('Index: $index');
+                        onItemTapped(context, index);
                       });
                     }
                   },
@@ -43,8 +61,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                         ),
                         SizedBox(
                           child: Opacity(
-                            opacity:
-                                bottomNavs[index] == selectedBottomNav ? 1 : 0.5,
+                            opacity: bottomNavs[index] == selectedBottomNav
+                                ? 1
+                                : 0.5,
                             child: Icon(
                               bottomNavs[index],
                               color: Colors.white,
