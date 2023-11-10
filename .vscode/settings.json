@@ -3,6 +3,8 @@
   "editor.codeActionsOnSave": {
     "source.fixAll": true,
     "source.organizeImports": false
-  }
+  },
+  "cmake.configureOnOpen": true,
+  "cmake.sourceDirectory": "C:/Programming/Curso de Flutter/cinemapedia/windows/flutter"
 
 }
