@@ -1,5 +1,7 @@
 # Cinemapedia
 
+Una app de películas y series, con información de The MovieDB.
+
 ## Dev
 
 1. Copiar el .env.template y renombrarlo a .env
