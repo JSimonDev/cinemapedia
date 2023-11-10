@@ -99,7 +99,6 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
               icon: const Icon(Icons.clear_rounded),
             ),
           );
-
         },
       ),
     ];
@@ -196,6 +195,8 @@ class _MovieItem extends StatelessWidget {
                   //* MOVIE TITLE
                   Text(
                     movie.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: textStyles.titleMedium,
                   ),
 
@@ -209,7 +210,9 @@ class _MovieItem extends StatelessWidget {
                   //* MOVIE OVERVIEW
                   (movie.overview.length > 100)
                       ? Text(
-                          '${movie.overview.substring(0, 100)}...',
+                          movie.overview,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.justify,
                         )
                       : Text(movie.overview),
