@@ -10,6 +10,12 @@ import 'package:cinemapedia/presentation/providers/actors/actors_by_movie_provid
 import '../../providers/providers.dart';
 import '../../widgets/widgets.dart';
 
+final isFavoriteProvider =
+    FutureProvider.family.autoDispose((ref, int movieId) {
+  final localStorageRepository = ref.watch(localStorageRepositoryProvider);
+  return localStorageRepository.isMovieFavorite(movieId);
+});
+
 class MovieScreen extends ConsumerStatefulWidget {
   static const String name = 'movie_screen';
   final String movieId;
@@ -100,7 +106,9 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
       onWillPop: onWillPop,
       child: Scaffold(
         extendBodyBehindAppBar: true,
-        appBar: movieScreenAppBar(context, updateStates),
+        appBar: movie == null
+            ? AppBar()
+            : movieScreenAppBar(context, updateStates, movie),
         body: Stack(
           children: [
             //* MOVIE IMAGE
@@ -182,8 +190,11 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
     );
   }
 
-  AppBar movieScreenAppBar(BuildContext context, updateStates) {
+  AppBar movieScreenAppBar(BuildContext context, updateStates, Movie movie) {
+    final isFavoriteFuture = ref.watch(isFavoriteProvider(movie.id));
+
     return AppBar(
+      //*  APPBAR BACK BUTTON
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded),
         tooltip: 'Back',
@@ -192,14 +203,27 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
           context.pop();
         },
       ),
+      //* APPBAR SAVE BUTTON
       actions: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: IconButton(
-            icon: const Icon(Icons.bookmark_border_rounded),
+            onPressed: () {
+              ref.watch(localStorageRepositoryProvider).toggleFavorite(movie);
+            },
+            icon: isFavoriteFuture.when(
+              loading: () => const CircularProgressIndicator(strokeWidth: 2),
+              data: (isFavorite) {
+                ref.invalidate(isFavoriteProvider(movie.id));
+                if (isFavorite) {
+                  return const Icon(Icons.bookmark);
+                }
+                return const Icon(Icons.bookmark_border_rounded);
+              },
+              error: (_, __) => throw UnimplementedError(),
+            ),
             tooltip: 'Save',
             iconSize: 28,
-            onPressed: () {},
           ),
         )
       ],
@@ -437,8 +461,9 @@ class _ActorsByMovie extends ConsumerWidget {
                         SizedBox(
                           width: 150,
                           child: Text(
-                            '${actor.name} /',
-                            maxLines: 2,
+                            actor.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
                           ),
                         ),
                         SizedBox(
@@ -446,6 +471,7 @@ class _ActorsByMovie extends ConsumerWidget {
                           child: Text(
                             actor.character ?? '',
                             maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 overflow: TextOverflow.ellipsis),
